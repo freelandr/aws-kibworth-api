@@ -5,8 +5,17 @@ service: serverless-flask
 plugins:
   - serverless-python-requirements
   - serverless-wsgi
+  
+package:
+  exclude:
+    - node_modules/**
+    - venv/**  
+    - .git/**
  
 custom:
+  tableName_details: 'kibworth-villager-details'
+  tableName_census: 'kibworth-villager-census'
+  tableName_er: 'kibworth-villager-er'
   wsgi:
     app: app.app
     packRequirements: false
@@ -16,8 +25,21 @@ custom:
 provider:
   name: aws
   runtime: python3.7
-  stage: dev
+  stage: prod
   region: us-east-1
+  iam:
+    role:
+      statements:
+        # Allow functions to interact with DynamoDB
+        - Effect: Allow
+          Action:
+            - dynamodb:Query
+            - dynamodb:Scan
+            - dynamodb:GetItem
+            - dynamodb:PutItem
+            - dynamodb:UpdateItem
+            - dynamodb:DeleteItem
+          Resource: '*'
  
 functions:
   app:
@@ -25,3 +47,29 @@ functions:
     events:
       - http: ANY /
       - http: 'ANY {proxy+}'
+  getDetailsByUuid:
+    handler: wsgi_handler.handler
+    events:
+      - http: 'GET /details/{proxy+}'      
+  topN:
+    handler: wsgi_handler.handler
+    events:
+      - http: 'GET /detailsTop/{proxy+}'
+  getDetailsBySurname:
+    handler: wsgi_handler.handler
+    events:
+      - http: 'GET /detailsBySurname/{proxy+}'    
+  getDetailsByAddr:
+    handler: wsgi_handler.handler
+    events:
+      - http: 'GET /detailsByAddr/{proxy+}'  
+  getCensusByUuid:
+    handler: wsgi_handler.handler
+    events:
+      - http: 'GET /census/{proxy+}' 
+  getERByUuid:
+    handler: wsgi_handler.handler
+    events:
+      - http: 'GET /er/{proxy+}'       
+      
+  
