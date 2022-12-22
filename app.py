@@ -1,5 +1,7 @@
 	
-# app.py
+""" 
+Kibworth Acenstry Project API
+"""
 
 import boto3
 from flask import Flask, jsonify, request
@@ -18,10 +20,12 @@ MAX_PAGE_SIZE=50
 
 @app.route("/")
 def root():
-    return "Welcome to the Kibworth Ancestry Public API"
+    """Get ancestor details by ID"""    
+    return jsonify({'message': 'Welcome to the Kibworth Ancestry Public API'})
 
 @app.route("/details/<string:uuid>")    
-def getDetailsByUuid(uuid):
+def getDetailsByUuid(uuid: str):
+    """Get ancestor details by ID"""
     resp = client.get_item(
         TableName=TB_DETAILS,
         Key={
@@ -34,7 +38,8 @@ def getDetailsByUuid(uuid):
     return jsonify(dynamo_obj_to_python_obj(item))
 
 @app.route("/detailsTop/<int:n>")
-def topN(n):
+def topN(n: int):
+    """Get top n results from details table"""
     if n > MAX_PAGE_SIZE:
         return jsonify({'error': f'Maximum supported page size = {MAX_PAGE_SIZE}'}), 400
     resp = client.scan(TableName=TB_DETAILS, Limit=n)
@@ -42,7 +47,8 @@ def topN(n):
     return jsonify(results)
     
 @app.route("/detailsBySurname/<string:surname>")    
-def getDetailsBySurname(surname):
+def getDetailsBySurname(surname: str):
+    """Get ancestor details by surname"""    
     resp = client.query(
         TableName=TB_DETAILS,
         IndexName=IND_SURNAME,
@@ -60,7 +66,8 @@ def getDetailsBySurname(surname):
     return jsonify(results)       
     
 @app.route("/detailsByAddr/<string:addr>")    
-def getDetailsByAddr(addr):
+def getDetailsByAddr(addr: str):
+    """Get ancestor details by Address (FIRST_ADD)"""    
     resp = client.query(
         TableName=TB_DETAILS,
         IndexName=IND_ADDR,
@@ -78,7 +85,8 @@ def getDetailsByAddr(addr):
     return jsonify(results)       
 
 @app.route("/census/<string:uuid>")    
-def getCensusByUuid(uuid):
+def getCensusByUuid(uuid: str):
+    """Get ancestor census details by ID"""    
     resp = client.get_item(
         TableName=TB_CENSUS,
         Key={
@@ -91,7 +99,8 @@ def getCensusByUuid(uuid):
     return jsonify(dynamo_obj_to_python_obj(item))
     
 @app.route("/er/<string:uuid>")    
-def getERByUuid(uuid):
+def getERByUuid(uuid: str):
+    """Get ancestor electoral register details by ID"""     
     resp = client.get_item(
         TableName=TB_ER,
         Key={
