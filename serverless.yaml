@@ -60,7 +60,11 @@ functions:
   getDetailsBySurname:
     handler: wsgi_handler.handler
     events:
-      - http: 'GET /detailsBySurname/{proxy+}'    
+      - http: 'GET /detailsBySurname/{proxy+}'   
+  getDetailsByFirstnameSurname:
+    handler: wsgi_handler.handler
+    events:
+      - http: 'GET /detailsByFirstnameSurname/{proxy+}'       
   getDetailsByAddr:
     handler: wsgi_handler.handler
     events:

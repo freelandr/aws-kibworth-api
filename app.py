@@ -18,6 +18,7 @@ TB_CENSUS='kibworth-villager-census'
 TB_ER='kibworth-villager-er'
 IND_SURNAME='SURNAME_SEARCH-index'
 IND_ADDR='FIRST_ADD_SEARCH-index'
+IND_FIRSTNAME_SURNAME='FIRSTNAME_SURNAME_SEARCH-index'
 MAX_PAGE_SIZE=50
 
 @app.route("/")
@@ -46,7 +47,7 @@ def topN(n: int):
         return error_response(f'Maximum supported page size = {MAX_PAGE_SIZE}', 400)
     resp = client.scan(TableName=TB_DETAILS, Limit=n)
     results = [ dynamo_obj_to_python_obj(r) for r in resp.get('Items') ]
-    return ok_response(results)
+    return ok_response(sortByUUID(results))
     
 @app.route("/detailsBySurname/<string:surname>")    
 def getDetailsBySurname(surname: str):
@@ -65,7 +66,26 @@ def getDetailsBySurname(surname: str):
     if not items or len(items) < 1:
         return error_response('No details found for ' + surname, 404)
     results = [ dynamo_obj_to_python_obj(r) for r in items ]
-    return ok_response(results)       
+    return ok_response(sortByUUID(results))  
+    
+@app.route("/detailsByFirstnameSurname/<string:firstnamesurname>")    
+def getDetailsByFirstnameSurname(firstnamesurname: str):
+    """Get ancestor details by surname"""    
+    resp = client.query(
+        TableName=TB_DETAILS,
+        IndexName=IND_FIRSTNAME_SURNAME,
+        ExpressionAttributeValues={
+            ':v1': {
+                'S': firstnamesurname.replace(" ","").upper(),
+            },
+        },
+        KeyConditionExpression='FIRSTNAME_SURNAME_SEARCH = :v1'       
+    )
+    items = resp.get('Items')
+    if not items or len(items) < 1:
+        return error_response('No details found for ' + firstnamesurname, 404)
+    results = [ dynamo_obj_to_python_obj(r) for r in items ]
+    return ok_response(sortByUUID(results))      
     
 @app.route("/detailsByAddr/<string:addr>")    
 def getDetailsByAddr(addr: str):
@@ -84,7 +104,7 @@ def getDetailsByAddr(addr: str):
     if not items or len(items) < 1:
         return error_response('No details found for ' + addr, 404)
     results = [ dynamo_obj_to_python_obj(r) for r in items ]
-    return ok_response(results)       
+    return ok_response(sortByUUID(results))       
 
 @app.route("/census/<string:uuid>")    
 def getCensusByUuid(uuid: str):
@@ -135,3 +155,6 @@ def ok_response(body) -> dict:
     
 def error_response(message: str, error_code: int) -> dict:
     return jsonify({'error': message}), error_code
+    
+def sortByUUID(records):
+    return sorted(records, key=lambda record: record.get('uuid'))
