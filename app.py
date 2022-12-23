@@ -5,9 +5,11 @@ Kibworth Acenstry Project API
 
 import boto3
 from flask import Flask, jsonify, request
+from flask_cors import CORS
 from boto3.dynamodb.types import TypeDeserializer, TypeSerializer
 
 app = Flask(__name__)
+cors = CORS(app)
 	
 client = boto3.client('dynamodb')
 
@@ -21,7 +23,7 @@ MAX_PAGE_SIZE=50
 @app.route("/")
 def root():
     """Get ancestor details by ID"""    
-    return jsonify({'message': 'Welcome to the Kibworth Ancestry Public API'})
+    return ok_response({'message': 'Welcome to the Kibworth Ancestry Public API'})
 
 @app.route("/details/<string:uuid>")    
 def getDetailsByUuid(uuid: str):
@@ -34,17 +36,17 @@ def getDetailsByUuid(uuid: str):
     )
     item = resp.get('Item')
     if not item:
-        return jsonify({'error': 'No details found for ' + uuid}), 404
-    return jsonify(dynamo_obj_to_python_obj(item))
+        return error_response('No details found for ' + uuid, 404)
+    return ok_response(dynamo_obj_to_python_obj(item))
 
 @app.route("/detailsTop/<int:n>")
 def topN(n: int):
     """Get top n results from details table"""
     if n > MAX_PAGE_SIZE:
-        return jsonify({'error': f'Maximum supported page size = {MAX_PAGE_SIZE}'}), 400
+        return error_response(f'Maximum supported page size = {MAX_PAGE_SIZE}', 400)
     resp = client.scan(TableName=TB_DETAILS, Limit=n)
     results = [ dynamo_obj_to_python_obj(r) for r in resp.get('Items') ]
-    return jsonify(results)
+    return ok_response(results)
     
 @app.route("/detailsBySurname/<string:surname>")    
 def getDetailsBySurname(surname: str):
@@ -61,9 +63,9 @@ def getDetailsBySurname(surname: str):
     )
     items = resp.get('Items')
     if not items or len(items) < 1:
-        return jsonify({'error': 'No details found for ' + surname}), 404
+        return error_response('No details found for ' + surname, 404)
     results = [ dynamo_obj_to_python_obj(r) for r in items ]
-    return jsonify(results)       
+    return ok_response(results)       
     
 @app.route("/detailsByAddr/<string:addr>")    
 def getDetailsByAddr(addr: str):
@@ -80,9 +82,9 @@ def getDetailsByAddr(addr: str):
     )
     items = resp.get('Items')
     if not items or len(items) < 1:
-        return jsonify({'error': 'No details found for ' + addr}), 404
+        return error_response('No details found for ' + addr, 404)
     results = [ dynamo_obj_to_python_obj(r) for r in items ]
-    return jsonify(results)       
+    return ok_response(results)       
 
 @app.route("/census/<string:uuid>")    
 def getCensusByUuid(uuid: str):
@@ -95,8 +97,8 @@ def getCensusByUuid(uuid: str):
     )
     item = resp.get('Item')
     if not item:
-        return jsonify({'error': 'No census details found for ' + uuid}), 404
-    return jsonify(dynamo_obj_to_python_obj(item))
+        return error_response('No census details found for ' + uuid, 404)
+    return ok_response(dynamo_obj_to_python_obj(item))
     
 @app.route("/er/<string:uuid>")    
 def getERByUuid(uuid: str):
@@ -109,8 +111,8 @@ def getERByUuid(uuid: str):
     )
     item = resp.get('Item')
     if not item:
-        return jsonify({'error': 'No electoral register details found for ' + uuid}), 404
-    return jsonify(dynamo_obj_to_python_obj(item))    
+        return error_response('No electoral register details found for ' + uuid, 404)
+    return ok_response(dynamo_obj_to_python_obj(item))    
 
 ### HELPER FUNCTIONS ###
 
@@ -127,3 +129,9 @@ def python_obj_to_dynamo_obj(python_obj: dict) -> dict:
         k: serializer.serialize(v)
         for k, v in python_obj.items()
     }
+
+def ok_response(body) -> dict:
+    return jsonify(body)
+    
+def error_response(message: str, error_code: int) -> dict:
+    return jsonify({'error': message}), error_code
